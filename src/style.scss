@@ -1,0 +1,199 @@
+*,
+::after,
+::before {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/*
+* General styles
+*/
+#app {
+  height: 100vh;
+  background-color: rgb(255, 246, 255);
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+
+// remove input scroll
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  /*Chrome*/
+  -webkit-appearance: none;
+  margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+
+input[type="number"] {
+  /* Firefox */
+  -moz-appearance: textfield;
+}
+
+// utility classes
+.cursor {
+  cursor: pointer;
+}
+
+.flex {
+  display: flex;
+}
+
+/*
+* Navbar
+*/
+.navbar {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  background-color: rgb(255, 234, 255);
+
+  > * {
+    padding: 12px;
+  }
+
+  h1 {
+    font-size: 1.7rem;
+  }
+
+  button {
+    padding: 7px 15px;
+    border: 2px solid #007bff;
+    background-color: #fefefe;
+    color: #007bff;
+    border-radius: 7px;
+
+    &:hover,
+    &:active {
+      border: none;
+      color: #fefefe;
+    }
+
+    &:hover {
+      background-color: #0369d5;
+    }
+
+    &:active {
+      background-color: #015ec2;
+    }
+  }
+}
+
+/*
+* swap container
+*/
+.container {
+  margin: 10vh auto 0 auto;
+  width: 70vw;
+  background-color: rgba(0, 0, 0, 0.935);
+  color: #fefefe;
+  padding: 17px;
+  border-radius: 17px;
+  flex-direction: column;
+  justify-content: space-evenly;
+  font-size: 1.5rem;
+  -webkit-box-shadow: 5px 5px 15px 5px rgba(0, 0, 0, 0.82);
+  box-shadow: 5px 5px 15px 5px rgba(0, 0, 0, 0.82);
+
+  > div {
+    align-self: center;
+  }
+
+  .swap-from,
+  .swap-to {
+    background-color: #2f2f2f;
+    border: 1px solid #474747;
+    padding: 17px !important;
+    margin: 10px 0;
+    width: 100%;
+    border-radius: 7px;
+    padding: 13px;
+
+    input,
+    p {
+      width: 50%;
+      padding: 3px;
+    }
+
+    input {
+      border-radius: 7px;
+      border: none;
+    }
+
+    p {
+      border-radius: 7px 0 0 7px;
+    }
+
+    p:hover {
+      background-color: #3e3d3d;
+    }
+  }
+
+  .estimate {
+    margin-top: 20px;
+    margin: 20px 0 10px 0;
+  }
+
+  button {
+    background-color: #007bff;
+    font-size: 1.3rem;
+    padding: 13px 0;
+    border-radius: 7px;
+    border: none;
+    color: #fefefe;
+
+    &:hover {
+      background-color: #0369d5;
+    }
+  }
+}
+
+/*
+* Modal
+*/
+/* The Modal (background) */
+.hidde-modal {
+  display: none;
+}
+
+.show-modal {
+  display: block;
+}
+
+.modal {
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0, 0, 0); /* Fallback color */
+  background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  position: relative;
+}
+
+/* The Close Button */
+.close {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  padding: 10px;
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
