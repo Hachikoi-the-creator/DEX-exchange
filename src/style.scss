@@ -12,7 +12,14 @@
 #app {
   height: 100vh;
   background-color: rgb(255, 246, 255);
+}
+
+body {
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+
+ul {
+  list-style: none;
 }
 
 // remove input scroll
@@ -178,17 +185,18 @@ input[type="number"] {
   border: 1px solid #888;
   width: 80%;
   position: relative;
-}
 
-/* The Close Button */
-.close {
-  position: absolute;
-  top: 0;
-  right: 10px;
-  padding: 10px;
-  color: #aaa;
-  font-size: 28px;
-  font-weight: bold;
+  /* The Close Button */
+  .close {
+    z-index: 1;
+    position: absolute;
+    top: -10px;
+    right: 0;
+    padding: 10px;
+    color: #aaa;
+    font-size: 38px;
+    font-weight: bold;
+  }
 }
 
 .close:hover,
@@ -196,4 +204,40 @@ input[type="number"] {
   color: black;
   text-decoration: none;
   cursor: pointer;
+}
+
+.tokens {
+  position: relative;
+
+  .token-btn {
+    margin: 3px 0;
+    background-color: rgb(255, 240, 255);
+    border: 1px solid black;
+    border-radius: 7px;
+    padding: 3px 5px;
+  }
+  .pag-top {
+    margin-top: 13px;
+  }
+  .pagination {
+    padding: 3px;
+
+    .next-btn,
+    .prev-btn {
+      background-color: rgb(234, 178, 234);
+      border: none;
+      border-radius: 7px;
+      padding: 7px 14px;
+
+      &:hover {
+        cursor: pointer;
+        background-color: rgb(208, 142, 208);
+      }
+    }
+
+    .next-btn {
+      position: absolute;
+      right: 3px;
+    }
+  }
 }

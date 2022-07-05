@@ -3,13 +3,28 @@ import { useState, useRef, useEffect } from "react";
 import "./style.scss";
 
 function App() {
-  const [tokens, setTokens] = useState("");
+  const [tokens, setTokens] = useState();
   const [modal, setModal] = useState(false);
   const firstLoad = useRef(true); //trick to solve issues whit useEffect
+  const [ranges, setRanges] = useState([0, 100]); //trick to solve the loading problem
 
   // Web3 logic
   const connectWallet = async () => {
-    console.log("cum");
+    console.log("conneticut");
+  };
+
+  const logFecth = () => {
+    console.log(tokens);
+  };
+
+  const prevHandler = () => {
+    if (ranges[0] <= 0) return;
+    setRanges((prev) => [prev[0] - 100, prev[1] - 100]);
+  };
+
+  const nextHandler = () => {
+    if (ranges[1] >= tokens.length) return;
+    setRanges((prev) => [prev[0] + 100, prev[1] + 100]);
   };
 
   useEffect(() => {
@@ -24,11 +39,10 @@ function App() {
       setTokens(tokenListJSON.tokens);
     }
 
+    // trick to avoid multiple fetching due to dual mounting
     if (firstLoad.current) {
       fetchData();
       firstLoad.current = false;
-    } else {
-      console.log("React 8 doing funny dual mounting");
     }
   });
 
@@ -72,7 +86,57 @@ function App() {
           <span className="close" onClick={() => setModal(false)}>
             &times;
           </span>
-          <div className="tokens">{"tokens hehe "}</div>
+          <div className="tokens">
+            <p>Choose a token</p>
+            {/* pagination btns */}
+            <div className="pagination pag-top">
+              <button className="prev-btn" onClick={prevHandler}>
+                Prev
+              </button>
+              <button className="next-btn" onClick={nextHandler}>
+                Next
+              </button>
+            </div>
+
+            {/* tokens */}
+            <ul>
+              {tokens &&
+                tokens.map((object, index) => {
+                  if (index >= ranges[0] && index < ranges[1]) {
+                    // console.log("ass", object);
+                    return (
+                      <li key={index}>
+                        {/* a way to select that exact token */}
+                        <button
+                          className="token-btn"
+                          onClick={(e) => {
+                            console.log(e.target.children[1].outerText);
+                          }}
+                        >
+                          <img
+                            src={object.logoURI}
+                            alt={`missing logo for item ${index}`}
+                          />
+                          {" " + object.name}
+                          {` (${object.symbol})`}
+                          <span style={{ display: "none" }}>{index}</span>
+                        </button>
+                      </li>
+                    );
+                  }
+                })}
+            </ul>
+
+            {/* pagination btns */}
+            <div className="pagination">
+              <button className="prev-btn" onClick={prevHandler}>
+                Prev
+              </button>
+              <button className="next-btn" onClick={nextHandler}>
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
