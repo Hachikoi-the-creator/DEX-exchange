@@ -1,6 +1,7 @@
 import React from "react";
 import { useState, useRef, useEffect } from "react";
 import "./style.scss";
+import { stringify } from "qs";
 
 function App() {
   const [tokens, setTokens] = useState();
@@ -14,6 +15,13 @@ function App() {
     toToken: [],
     toJsx: "Select Token",
   });
+  const [fetchResponse, setFetchResponse] = useState({ input: "", gas: "" });
+
+  // better rounding for the amount of tokens to buy
+  Number.prototype.round = function (n) {
+    const d = Math.pow(10, n);
+    return Math.round((this + Number.EPSILON) * d) / d;
+  };
 
   // Web3 logic
   const connectWallet = async () => {
@@ -37,10 +45,11 @@ function App() {
       return (
         <>
           <img
+            className="logo-img"
             src={args.logoURI}
             alt={`missing image for token ${args.name}`}
           />
-          <span>{args.symbol}</span>
+          <span>{" " + args.symbol}</span>
           <span style={{ display: "none" }}>{index}</span>
         </>
       );
@@ -72,6 +81,9 @@ function App() {
     console.log(tokenSelection);
   };
 
+  /*
+   * handlers for the btns that avoid extreme load bug
+   */
   const prevHandler = () => {
     if (ranges[0] <= 0) return;
     setRanges((prev) => [prev[0] - 100, prev[1] - 100]);
@@ -83,28 +95,34 @@ function App() {
   };
 
   // Shows price everytime the user leaves the "from" input
-  const fromBlurHandler = (e) => {
+  const fromBlurHandler = async (e) => {
     const inputVal = e.target.value;
-
-    // console.log(
-    //   "printing state: ",
-    //   inputVal,
-    //   tokenSelection.fromJsx,
-    //   tokenSelection.toJsx
-    // );
 
     if (
       tokenSelection.fromJsx === "Select Token" ||
       tokenSelection.toJsx === "Select Token" ||
-      !e.target.value
-    ) {
+      !inputVal
+    )
       return;
-    } else {
-      console.log(
-        "can't see shit unu",
-        inputVal * 10 ** tokenSelection.fromToken.decimals
-      );
-    }
+
+    const tokensAmount = inputVal * 10 ** tokenSelection.fromToken.decimals;
+    const params = {
+      sellToken: tokenSelection.fromToken.address,
+      buyToken: tokenSelection.toToken.address,
+      sellAmount: tokensAmount,
+    };
+    // get price from 0x
+    const data = await fetch(
+      `https://api.0x.org/swap/v1/price?${stringify(params)}`
+    ).then((res) => res.json());
+
+    const amountTokenBuy = (
+      data.buyAmount /
+      10 ** tokenSelection.fromToken.decimals
+    ).round(4);
+    const estimatedGas = data.estimatedGas;
+
+    setFetchResponse({ input: amountTokenBuy, gas: estimatedGas });
   };
 
   useEffect(() => {
@@ -160,9 +178,14 @@ function App() {
           >
             {tokenSelection.toJsx}
           </p>
-          <input type="number" placeholder="Enter amount" />
+          <input
+            type="number"
+            placeholder="Enter amount above"
+            disabled
+            value={fetchResponse.input}
+          />
         </div>
-        <p className="estimate">Estimated gas</p>
+        <p className="estimate">Estimated gas {fetchResponse.gas}</p>
         <button className="cursor"> Swap </button>
       </div>
 
