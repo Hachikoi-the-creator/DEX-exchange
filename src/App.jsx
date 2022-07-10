@@ -9,8 +9,10 @@ function App() {
   const getOrGive = useRef("");
   const [ranges, setRanges] = useState([0, 100]); //trick to solve the loading problem
   const [tokenSelection, setTokenSelection] = useState({
-    from: "Select token",
-    to: "Select token",
+    fromToken: [],
+    fromJsx: "Select Token",
+    toToken: [],
+    toJsx: "Select Token",
   });
 
   // Web3 logic
@@ -29,43 +31,41 @@ function App() {
   };
 
   const tokenSelectHandler = (e) => {
-    const changeInnerHTML = (imgUrl, tokenSymbol) => {
+    const index = +e.target.children[1].outerText;
+
+    const changeInnerHTML = (args) => {
       return (
         <>
-          <img src={imgUrl} alt={`missing image for token ${tokenSymbol}`} />
-          <span>{tokenSymbol}</span>
+          <img
+            src={args.logoURI}
+            alt={`missing image for token ${args.name}`}
+          />
+          <span>{args.symbol}</span>
+          <span style={{ display: "none" }}>{index}</span>
         </>
       );
     };
 
+    const field = changeInnerHTML(tokens[index]);
     setModal(false);
 
-    const index = +e.target.children[1].outerText;
-    const field = changeInnerHTML(tokens[index].logoURI, tokens[index].symbol);
-    // const field = () => {
-    //   return (
-    //     <>
-    //       <img
-    //         src={tokens[index].logoURI}
-    //         alt={`missing image for token ${tokenSymbol}`}
-    //       />
-    //       <span>{tokens[index].symbol}</span>
-    //     </>
-    //   );
-    // };
-
-    console.log("check e", e.target.children[1].outerText, getOrGive.current);
+    console.log("check e value", e.target.children[1].outerText);
+    console.log("get or give?: ", getOrGive.current);
 
     if (getOrGive.current == "give") {
       setTokenSelection((prev) => ({
-        from: field,
-        to: prev.to,
+        fromToken: tokens[index],
+        fromJsx: field,
+        toToken: prev.toToken,
+        toJsx: prev.toJsx,
       }));
       console.log("trying to from :", index);
     } else {
       setTokenSelection((prev) => ({
-        from: prev.from,
-        to: field,
+        fromToken: prev.fromToken,
+        fromJsx: prev.fromJsx,
+        toToken: tokens[index],
+        toJsx: field,
       }));
       console.log("trying to tot :", index);
     }
@@ -80,6 +80,31 @@ function App() {
   const nextHandler = () => {
     if (ranges[1] >= tokens.length) return;
     setRanges((prev) => [prev[0] + 100, prev[1] + 100]);
+  };
+
+  // Shows price everytime the user leaves the "from" input
+  const fromBlurHandler = (e) => {
+    const inputVal = e.target.value;
+
+    // console.log(
+    //   "printing state: ",
+    //   inputVal,
+    //   tokenSelection.fromJsx,
+    //   tokenSelection.toJsx
+    // );
+
+    if (
+      tokenSelection.fromJsx === "Select Token" ||
+      tokenSelection.toJsx === "Select Token" ||
+      !e.target.value
+    ) {
+      return;
+    } else {
+      console.log(
+        "can't see shit unu",
+        inputVal * 10 ** tokenSelection.fromToken.decimals
+      );
+    }
   };
 
   useEffect(() => {
@@ -118,21 +143,22 @@ function App() {
       {/* Swap container */}
       <div className="container flex">
         <h2>Swap</h2>
-        <div className="swap-from flex">
+        <div className="swap-from flex" onBlur={(e) => fromBlurHandler(e)}>
           <p
             onClick={(e) => selectHandler("giveToken", e)}
             className="cursor swap-from-p"
           >
-            {tokenSelection.from}
+            {tokenSelection.fromJsx}
           </p>
-          <input type="number" placeholder="Enter amount" />
+          <input type="number" placeholder="Enter amount" id="from-input" />
         </div>
+
         <div className="swap-to flex">
           <p
             onClick={(e) => selectHandler("getToken", e)}
             className="cursor swap-to-p"
           >
-            {tokenSelection.to}
+            {tokenSelection.toJsx}
           </p>
           <input type="number" placeholder="Enter amount" />
         </div>
