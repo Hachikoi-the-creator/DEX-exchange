@@ -6,15 +6,70 @@ function App() {
   const [tokens, setTokens] = useState();
   const [modal, setModal] = useState(false);
   const firstLoad = useRef(true); //trick to solve issues whit useEffect
+  const getOrGive = useRef("");
   const [ranges, setRanges] = useState([0, 100]); //trick to solve the loading problem
+  const [tokenSelection, setTokenSelection] = useState({
+    from: "Select token",
+    to: "Select token",
+  });
 
   // Web3 logic
   const connectWallet = async () => {
     console.log("conneticut");
   };
 
-  const logFecth = () => {
-    console.log(tokens);
+  const selectHandler = (side) => {
+    setModal(true);
+    if (side == "giveToken") {
+      // upper side
+      getOrGive.current = "give";
+    } else {
+      getOrGive.current = "get";
+    }
+  };
+
+  const tokenSelectHandler = (e) => {
+    const changeInnerHTML = (imgUrl, tokenSymbol) => {
+      return (
+        <>
+          <img src={imgUrl} alt={`missing image for token ${tokenSymbol}`} />
+          <span>{tokenSymbol}</span>
+        </>
+      );
+    };
+
+    setModal(false);
+
+    const index = +e.target.children[1].outerText;
+    const field = changeInnerHTML(tokens[index].logoURI, tokens[index].symbol);
+    // const field = () => {
+    //   return (
+    //     <>
+    //       <img
+    //         src={tokens[index].logoURI}
+    //         alt={`missing image for token ${tokenSymbol}`}
+    //       />
+    //       <span>{tokens[index].symbol}</span>
+    //     </>
+    //   );
+    // };
+
+    console.log("check e", e.target.children[1].outerText, getOrGive.current);
+
+    if (getOrGive.current == "give") {
+      setTokenSelection((prev) => ({
+        from: field,
+        to: prev.to,
+      }));
+      console.log("trying to from :", index);
+    } else {
+      setTokenSelection((prev) => ({
+        from: prev.from,
+        to: field,
+      }));
+      console.log("trying to tot :", index);
+    }
+    console.log(tokenSelection);
   };
 
   const prevHandler = () => {
@@ -59,24 +114,32 @@ function App() {
           </button>
         </li>
       </ul>
+
       {/* Swap container */}
       <div className="container flex">
         <h2>Swap</h2>
         <div className="swap-from flex">
-          <p onClick={() => setModal(true)} className="cursor">
-            Select token
+          <p
+            onClick={(e) => selectHandler("giveToken", e)}
+            className="cursor swap-from-p"
+          >
+            {tokenSelection.from}
           </p>
           <input type="number" placeholder="Enter amount" />
         </div>
         <div className="swap-to flex">
-          <p onClick={() => setModal(true)} className="cursor">
-            Select token
+          <p
+            onClick={(e) => selectHandler("getToken", e)}
+            className="cursor swap-to-p"
+          >
+            {tokenSelection.to}
           </p>
           <input type="number" placeholder="Enter amount" />
         </div>
         <p className="estimate">Estimated gas</p>
         <button className="cursor"> Swap </button>
       </div>
+
       {/* modal */}
       <div
         id="myModal"
@@ -88,6 +151,7 @@ function App() {
           </span>
           <div className="tokens">
             <p>Choose a token</p>
+
             {/* pagination btns */}
             <div className="pagination pag-top">
               <button className="prev-btn" onClick={prevHandler}>
@@ -103,15 +167,13 @@ function App() {
               {tokens &&
                 tokens.map((object, index) => {
                   if (index >= ranges[0] && index < ranges[1]) {
-                    // console.log("ass", object);
+                    // console.log("ascii", object);
                     return (
                       <li key={index}>
                         {/* a way to select that exact token */}
                         <button
                           className="token-btn"
-                          onClick={(e) => {
-                            console.log(e.target.children[1].outerText);
-                          }}
+                          onClick={(e) => tokenSelectHandler(e)}
                         >
                           <img
                             src={object.logoURI}
