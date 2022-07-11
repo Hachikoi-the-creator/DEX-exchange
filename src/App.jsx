@@ -2,10 +2,14 @@ import React from "react";
 import { useState, useRef, useEffect } from "react";
 import "./style.scss";
 import { stringify } from "qs";
+import { ethers } from "ethers";
 
 function App() {
+  const [web3Connected, setWeb3Connected] = useState(false);
   const [tokens, setTokens] = useState();
   const [modal, setModal] = useState(false);
+  const userAdx = useRef("");
+  const tokensToSell = useRef(0);
   const firstLoad = useRef(true); //trick to solve issues whit useEffect
   const getOrGive = useRef("");
   const [ranges, setRanges] = useState([0, 100]); //trick to solve the loading problem
@@ -23,11 +27,33 @@ function App() {
     return Math.round((this + Number.EPSILON) * d) / d;
   };
 
-  // Web3 logic
+  /*
+   *Web3 logic
+   */
   const connectWallet = async () => {
     console.log("conneticut");
+    const { ethereum } = window;
+
+    if (typeof ethereum === undefined) {
+      window.alert("Please go and install metamask!");
+      window.location.href = "https://metamask.io/";
+    } else {
+      try {
+        const accounts = await ethereum.request({
+          method: "eth_requestAccounts",
+        });
+        userAdx.current = accounts[0];
+        console.log("user ", accounts[0], " Connected");
+        setWeb3Connected(true);
+      } catch (err) {
+        console.log(err);
+      }
+    }
   };
 
+  /*
+   * JSX modifications
+   */
   const selectHandler = (side) => {
     setModal(true);
     if (side == "giveToken") {
@@ -96,20 +122,15 @@ function App() {
 
   // Shows price everytime the user leaves the "from" input
   const fromBlurHandler = async (e) => {
-    const inputVal = e.target.value;
+    tokensToSell.current = e.target.value;
 
-    if (
-      tokenSelection.fromJsx === "Select Token" ||
-      tokenSelection.toJsx === "Select Token" ||
-      !inputVal
-    )
-      return;
+    if (!checkValidInputs()) return;
 
-    const tokensAmount = inputVal * 10 ** tokenSelection.fromToken.decimals;
     const params = {
       sellToken: tokenSelection.fromToken.address,
       buyToken: tokenSelection.toToken.address,
-      sellAmount: tokensAmount,
+      sellAmount:
+        tokensToSell.current * 10 ** tokenSelection.fromToken.decimals,
     };
     // get price from 0x
     const data = await fetch(
@@ -124,6 +145,41 @@ function App() {
 
     setFetchResponse({ input: amountTokenBuy, gas: estimatedGas });
   };
+
+  const handleTokenSwap = async () => {
+    console.log("Swaping tokens");
+    if (!checkValidInputs()) {
+      console.log("Missing inputs, cannot make trade");
+      return;
+    }
+    // else
+    const params = {
+      sellToken: tokenSelection.fromToken.address,
+      buyToken: tokenSelection.toToken.address,
+      sellAmount:
+        tokensToSell.current * 10 ** tokenSelection.fromToken.decimals,
+      takerAddress: userAdx.current,
+    };
+
+    // get quote from 0x
+    const getQuoteRes = await fetch(
+      `https://api.0x.org/swap/v1/quote?${stringify(params)}`
+    ).then((res) => res.json());
+
+    console.log("The quote, responded whit", getQuoteRes);
+  };
+
+  //* Helper to reduce verbose code
+  function checkValidInputs() {
+    if (
+      tokenSelection.fromJsx === "Select Token" ||
+      tokenSelection.toJsx === "Select Token" ||
+      !tokensToSell.current
+    ) {
+      return false;
+    }
+    return true;
+  }
 
   useEffect(() => {
     // fetch function, CORS errors if declared outside useEffect
@@ -153,7 +209,7 @@ function App() {
         </li>
         <li>
           <button onClick={connectWallet} className="cursor">
-            Connect Metamask
+            {web3Connected ? "Connected!" : "Connect Metamask"}
           </button>
         </li>
       </ul>
@@ -186,7 +242,16 @@ function App() {
           />
         </div>
         <p className="estimate">Estimated gas {fetchResponse.gas}</p>
-        <button className="cursor"> Swap </button>
+        {/* Small logic to only activate btn is wallet is connected */}
+        {web3Connected ? (
+          <button className="cursor" onClick={handleTokenSwap}>
+            Swap
+          </button>
+        ) : (
+          <button className="cursor disabled-btn" disabled>
+            Cannot Swap
+          </button>
+        )}
       </div>
 
       {/* modal */}

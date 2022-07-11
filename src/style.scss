@@ -257,6 +257,12 @@ input[type="number"]:disabled {
   border: 1px solid #fefefe;
 }
 
+.disabled-btn[disabled],
+.disabled-btn[disabled]:hover {
+  background-color: #353f4a;
+  cursor: not-allowed;
+}
+
 @media screen and (max-width: 400px) {
   .container .swap-from,
   .swap-to {
