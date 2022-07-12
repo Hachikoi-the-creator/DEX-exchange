@@ -2,15 +2,18 @@ import React from "react";
 import { useState, useRef, useEffect } from "react";
 import "./style.scss";
 import { stringify } from "qs";
-import { ethers } from "ethers";
+import { ethers, Signer } from "ethers";
+import { ABI } from "./utils/erc20";
 
 function App() {
+  const firstLoad = useRef(true); //trick to solve issues whit useEffect
   const [web3Connected, setWeb3Connected] = useState(false);
-  const [tokens, setTokens] = useState();
   const [modal, setModal] = useState(false);
   const userAdx = useRef("");
+  const signerMetamask = useRef();
+
+  const [tokens, setTokens] = useState();
   const tokensToSell = useRef(0);
-  const firstLoad = useRef(true); //trick to solve issues whit useEffect
   const getOrGive = useRef("");
   const [ranges, setRanges] = useState([0, 100]); //trick to solve the loading problem
   const [tokenSelection, setTokenSelection] = useState({
@@ -39,12 +42,15 @@ function App() {
       window.location.href = "https://metamask.io/";
     } else {
       try {
-        const accounts = await ethereum.request({
-          method: "eth_requestAccounts",
-        });
-        userAdx.current = accounts[0];
-        console.log("user ", accounts[0], " Connected");
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts");
+        const signer = provider.getSigner();
+
+        signerMetamask.current = signer;
+        userAdx.current = await signer.getAddress();
         setWeb3Connected(true);
+
+        console.log("Account:", await signer.getAddress());
       } catch (err) {
         console.log(err);
       }
@@ -152,21 +158,34 @@ function App() {
       console.log("Missing inputs, cannot make trade");
       return;
     }
-    // else
+
+    const amount = ethers.utils.parseEther(tokensToSell.current);
     const params = {
-      sellToken: tokenSelection.fromToken.address,
       buyToken: tokenSelection.toToken.address,
-      sellAmount:
-        tokensToSell.current * 10 ** tokenSelection.fromToken.decimals,
-      takerAddress: userAdx.current,
+      sellToken: tokenSelection.fromToken.address,
+      sellAmount: amount.toString(),
+      // takerAddress: userAdx.current,
+      takerAddress: "0xdf24b85bc03ff79a8e8d7d639a47c0259a63522d", //address whit 0.02 COV
     };
+    console.log(params);
 
-    // get quote from 0x
-    const getQuoteRes = await fetch(
+    const quote = await fetch(
       `https://api.0x.org/swap/v1/quote?${stringify(params)}`
-    ).then((res) => res.json());
+    )
+      .then((res) => res.json())
+      .catch((err) => console.log(err));
+    console.log(quote);
 
-    console.log("The quote, responded whit", getQuoteRes);
+    // // get quote from 0x
+    // console.log("params to  make API call: ", params);
+    // const quoteResponse = await fetch(
+    //   `https://api.0x.org/swap/v1/quote?${stringify(params)}`
+    // )
+    //   .then((res) => res.json())
+    //   .catch((err) => console.log(err));
+
+    // console.log("The quote, responded whit", quoteResponse);
+    // return quoteResponse;
   };
 
   //* Helper to reduce verbose code
@@ -179,6 +198,26 @@ function App() {
       return false;
     }
     return true;
+  }
+
+  // * Swap helper, kinda
+  async function swapTokens() {
+    // contract setup
+    await ethereum.request({ method: "eth_requestAccounts" });
+
+    const ERC20Contract = new ethers.Contract(
+      tokenSelection.fromToken.address,
+      ABI,
+      signerMetamask.current
+    );
+
+    const quoteJson = handleTokenSwap();
+
+    // set max allowance
+    // const maxApproval = ethers.constants.MaxUint256;
+    // ERC20Contract.approve(quoteJson.allowanceTarget, maxApproval)
+    //   .then((tx) => console.log("tx receipt: ", tx))
+    //   .catch((err) => console.log(err));
   }
 
   useEffect(() => {
@@ -244,7 +283,7 @@ function App() {
         <p className="estimate">Estimated gas {fetchResponse.gas}</p>
         {/* Small logic to only activate btn is wallet is connected */}
         {web3Connected ? (
-          <button className="cursor" onClick={handleTokenSwap}>
+          <button className="cursor" onClick={swapTokens}>
             Swap
           </button>
         ) : (
