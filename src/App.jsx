@@ -2,7 +2,7 @@ import React from "react";
 import { useState, useRef, useEffect } from "react";
 import "./style.scss";
 import { stringify } from "qs";
-import { ethers, Signer } from "ethers";
+import { ethers, providers, Signer } from "ethers";
 import { ABI } from "./utils/erc20";
 
 function App() {
@@ -134,13 +134,18 @@ function App() {
       buyToken: tokenSelection.toToken.address,
       sellAmount: tokensToSell.current,
     };
+    console.log("big num: ", typeof tokensToSell.current);
 
     // get price from 0x
     const data = await fetch(
       `https://api.0x.org/swap/v1/price?${stringify(params)}`
-    )
-      .then((res) => res.json())
-      .catch((err) => console.log("Failed to get price: ", err));
+    ).then((res) => {
+      if (!res.ok) {
+        //TODO: show another alert for this error
+        console.log("Not available pools for selected pair, res: ", res);
+      }
+      return res.json();
+    });
 
     /**
      * @param ETH_in_solidity_format:string
@@ -152,7 +157,7 @@ function App() {
     setFetchResponse({ input: amountTokenBuy, gas: estimatedGas });
   };
 
-  const handleTokenSwap = async () => {
+  const getQuote = async () => {
     console.log("Swaping tokens");
     if (!checkValidInputs()) {
       console.log("Missing inputs, cannot make trade");
@@ -165,15 +170,16 @@ function App() {
       sellAmount: tokensToSell.current,
       // takerAddress: userAdx.current,
     };
-    console.log("quote params: ", params);
 
     const quote = await fetch(
       `https://api.0x.org/swap/v1/quote?${stringify(params)}`
-    )
-      .then((res) => res.json())
-      .catch((err) => console.log("Quote failed whit: ", err));
-
-    // console.log("Failed to get quote: ", err);
+    ).then((res) => {
+      if (!res.ok) {
+        // TODO: do something else here, an alert or something
+        console.log("You have not enough balance to do this!", res);
+      }
+      return res.json();
+    });
 
     console.log("The quote, responded whit", quote);
     return quote;
@@ -193,22 +199,34 @@ function App() {
 
   // * Swap helper, kinda
   async function swapTokens() {
-    // contract setup
-    // await ethereum.request({ method: "eth_requestAccounts" });
-
     const ERC20Contract = new ethers.Contract(
       tokenSelection.fromToken.address,
       ABI,
       signerMetamask.current
     );
+    console.log("contract instance", ERC20Contract);
 
-    const quoteJson = handleTokenSwap();
+    const quoteJson = await getQuote(); //needs to resolve the promise
+    if (!quoteJson) return; //full top if there's a problem whit the quote
 
     // set max allowance
-    // const maxApproval = ethers.constants.MaxUint256;
-    // ERC20Contract.approve(quoteJson.allowanceTarget, maxApproval)
-    //   .then((tx) => console.log("tx receipt: ", tx))
-    //   .catch((err) => console.log(err));
+    let ercRes;
+    try {
+      ercRes = await ERC20Contract.approve(
+        quoteJson.allowanceTarget,
+        ethers.constants.MaxUint256
+      );
+    } catch (error) {
+      console.log(error);
+    }
+
+    // perform swap
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      provider.sendTransaction(ercRes);
+    } catch (error) {
+      console.log("Error doing the swap: ", erros);
+    }
   }
 
   useEffect(() => {
@@ -274,7 +292,7 @@ function App() {
         <p className="estimate">Estimated gas {fetchResponse.gas}</p>
         {/* Small logic to only activate btn is wallet is connected */}
         {web3Connected ? (
-          <button className="cursor" onClick={handleTokenSwap}>
+          <button className="cursor" onClick={swapTokens}>
             Swap
           </button>
         ) : (
