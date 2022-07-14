@@ -1,3 +1,7 @@
+# submit data
+repo: https://github.com/Hachikoi-the-creator/DEX-exchange
+metamask adx: 0x9f83523C25aC79Be71ea16F303c38FA7b792A5e8
+
 # todo:
 - add another state var to know if the user wants to get that token or recieve that token (depending on wich button they pressed)
 - NVM instead of another var, just send a param whit the onClick function
