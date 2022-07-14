@@ -24,12 +24,6 @@ function App() {
   });
   const [fetchResponse, setFetchResponse] = useState({ input: "", gas: "" });
 
-  // better rounding for the amount of tokens to buy
-  Number.prototype.round = function (n) {
-    const d = Math.pow(10, n);
-    return Math.round((this + Number.EPSILON) * d) / d;
-  };
-
   /*
    *Web3 logic
    */
@@ -128,26 +122,32 @@ function App() {
 
   // Shows price everytime the user leaves the "from" input
   const fromBlurHandler = async (e) => {
-    tokensToSell.current = e.target.value;
+    /**
+     * @param ETH_value_in_decimals:int/string
+     * @returns ETH equivalnce:string*/
+    tokensToSell.current = ethers.utils.parseEther(e.target.value).toString();
 
     if (!checkValidInputs()) return;
 
     const params = {
       sellToken: tokenSelection.fromToken.address,
       buyToken: tokenSelection.toToken.address,
-      sellAmount:
-        tokensToSell.current * 10 ** tokenSelection.fromToken.decimals,
+      sellAmount: tokensToSell.current,
     };
+
     // get price from 0x
     const data = await fetch(
       `https://api.0x.org/swap/v1/price?${stringify(params)}`
-    ).then((res) => res.json());
+    )
+      .then((res) => res.json())
+      .catch((err) => console.log("Failed to get price: ", err));
 
-    const amountTokenBuy = (
-      data.buyAmount /
-      10 ** tokenSelection.fromToken.decimals
-    ).round(4);
+    /**
+     * @param ETH_in_solidity_format:string
+     * @returns ETH in decimals:string*/
+    const amountTokenBuy = ethers.utils.formatEther(data.buyAmount).slice(0, 9);
     const estimatedGas = data.estimatedGas;
+    // console.log("What is this?: ", typeof amountTokenBuy);
 
     setFetchResponse({ input: amountTokenBuy, gas: estimatedGas });
   };
@@ -159,33 +159,24 @@ function App() {
       return;
     }
 
-    const amount = ethers.utils.parseEther(tokensToSell.current);
     const params = {
-      buyToken: tokenSelection.toToken.address,
-      sellToken: tokenSelection.fromToken.address,
-      sellAmount: amount.toString(),
+      buyToken: tokenSelection.fromToken.address,
+      sellToken: tokenSelection.toToken.address,
+      sellAmount: tokensToSell.current,
       // takerAddress: userAdx.current,
-      takerAddress: "0xdf24b85bc03ff79a8e8d7d639a47c0259a63522d", //address whit 0.02 COV
     };
-    console.log(params);
+    console.log("quote params: ", params);
 
     const quote = await fetch(
       `https://api.0x.org/swap/v1/quote?${stringify(params)}`
     )
       .then((res) => res.json())
-      .catch((err) => console.log(err));
-    console.log(quote);
+      .catch((err) => console.log("Quote failed whit: ", err));
 
-    // // get quote from 0x
-    // console.log("params to  make API call: ", params);
-    // const quoteResponse = await fetch(
-    //   `https://api.0x.org/swap/v1/quote?${stringify(params)}`
-    // )
-    //   .then((res) => res.json())
-    //   .catch((err) => console.log(err));
+    // console.log("Failed to get quote: ", err);
 
-    // console.log("The quote, responded whit", quoteResponse);
-    // return quoteResponse;
+    console.log("The quote, responded whit", quote);
+    return quote;
   };
 
   //* Helper to reduce verbose code
@@ -203,7 +194,7 @@ function App() {
   // * Swap helper, kinda
   async function swapTokens() {
     // contract setup
-    await ethereum.request({ method: "eth_requestAccounts" });
+    // await ethereum.request({ method: "eth_requestAccounts" });
 
     const ERC20Contract = new ethers.Contract(
       tokenSelection.fromToken.address,
@@ -283,7 +274,7 @@ function App() {
         <p className="estimate">Estimated gas {fetchResponse.gas}</p>
         {/* Small logic to only activate btn is wallet is connected */}
         {web3Connected ? (
-          <button className="cursor" onClick={swapTokens}>
+          <button className="cursor" onClick={handleTokenSwap}>
             Swap
           </button>
         ) : (
